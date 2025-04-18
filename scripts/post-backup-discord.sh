@@ -1,36 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# URL do webhook deve vir de uma variável de ambiente.
-WEBHOOK="${DISCORD_WEBHOOK_URL:-}"
-if [[ -z "$WEBHOOK" ]]; then
-  echo "ERRO: defina DISCORD_WEBHOOK_URL antes de iniciar o container." >&2
-  exit 1
-fi
+FILE="${BACKUP_FILE:-$BACKUP_PATH}"
+RAW_SIZE="$(du -s /data | awk '{print $1}')"
+ZIP_SIZE="$(stat -c%s "$FILE")"
+COMPR_PCT=$(awk -v r="$RAW_SIZE" -v z="$ZIP_SIZE" \
+  'BEGIN {printf "%.1f", (1 - z/r) * 100}')
+DURATION_SEC="${BACKUP_DURATION_SEC:-$SECONDS}"
 
-# O mc-backup expõe DEST_DIR e RCON_HOST durante o hook pós‑backup.&#8203;:contentReference[oaicite:0]{index=0}
-DEST="${DEST_DIR:-/backups}"
-LAST_FILE="$(ls -1t "$DEST"/*.tgz | head -n 1)"
+# jogadores online
+PLAYERS="$(mcrcon -H "$RCON_HOST" -P "$RCON_PORT" \
+  -p "$RCON_PASSWORD" 'list' | sed -n 's/^There are \([0-9]*\) .*$/\1/p')"
 
-# Monta payload JSON.
-SIZE="$(du -h "$LAST_FILE" | cut -f1)"
-NOW="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+# próximo agendamento simples (usa BACKUP_INTERVAL=2h, 30m, etc.)
+NEXT_RUN="$(date -u -d "now + ${BACKUP_INTERVAL:-2h}" '+%Y-%m-%dT%H:%M:%SZ')"
 
-cat <<EOF | curl -sS -H 'Content-Type: application/json' \
-  -X POST -d @- "$WEBHOOK" >/dev/null
-{
-  "username": "Minecraft‑Backup",
-  "embeds": [
-    {
-      "title": "Backup concluído",
-      "description": "Servidor **${RCON_HOST:-desconhecido}** salvo com sucesso.",
-      "fields": [
-        {"name": "Arquivo",  "value": "$(basename "$LAST_FILE")", "inline": true},
-        {"name": "Tamanho", "value": "$SIZE",                     "inline": true},
-        {"name": "Diretório", "value": "$DEST",                   "inline": false}
-      ],
-      "timestamp": "$NOW"
-    }
-  ]
-}
-EOF
+json=$(jq -n --arg host "$RCON_HOST" \
+             --arg file "$(basename "$FILE")" \
+             --arg zipsize "$(numfmt --to=iec $ZIP_SIZE)" \
+             --arg rawsize "$(numfmt --to=iec $RAW_SIZE)" \
+             --arg pct "$COMPR_PCT" \
+             --arg dur "$(printf "%02dm%02ds" $((DURATION_SEC/60)) $((DURATION_SEC%60)))" \
+             --arg players "$PLAYERS" \
+             --arg next "$NEXT_RUN" \
+             '{
+                username:"Minecraft‑Backup",
+                embeds:[{
+                  title:"Backup concluído",
+                  description:( "Servidor **" + $host + "** salvo com êxito"),
+                  fields:[
+                    {name:"Arquivo",   value:$file, inline:true},
+                    {name:"Compactado",value:$zipsize, inline:true},
+                    {name:"Bruto",     value:$rawsize, inline:true},
+                    {name:"Compressão",value:($pct + "%"), inline:true},
+                    {name:"Duração",   value:$dur, inline:true},
+                    {name:"Players Online", value:$players, inline:true},
+                    {name:"Próximo",   value:$next, inline:false}
+                  ],
+                  timestamp: (now|todate)
+                }]
+              }')
+
+curl -sS -H "Content-Type: application/json" -d "$json" "$DISCORD_WEBHOOK_URL"
