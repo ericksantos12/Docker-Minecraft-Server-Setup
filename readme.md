@@ -17,23 +17,26 @@ Este projeto configura e gerencia servidores Minecraft utilizando Docker, com su
 
 ### 2. **LazyMC**
 - Proxy inteligente que coloca o servidor Minecraft em modo de descanso quando inativo e o desperta automaticamente quando jogadores tentam se conectar.
-- Economiza recursos do sistema ao desligar servidores ociosos, especialmente útil para servidores modded que consomem muita memória/CPU.
+- Economiza recursos do sistema ao desligar servidores ociosos, especialmente útil para servidores com mods que consomem muita memória/CPU.
 - Imagem: `ghcr.io/joesturge/lazymc-docker-proxy:latest`.
 
 ### 3. **Raspberry**
 - Servidor Minecraft com modpack do CurseForge.
 - Modpack: Raspberry Flavoured 3.0 Pre-Release 4.
 - Versão: 1.19.2.
+- Imagem: `itzg/minecraft-server:java21`.
 
 ### 4. **Vanilla**
 - Servidor Minecraft com modpack do Modrinth.
 - Modpack: Vanilla.
 - Versão: 1.21.4.
+- Imagem: `itzg/minecraft-server:java21`.
 
 ### 5. **Backups**
 - Serviço para realizar backups automáticos dos servidores.
 - Notifica o Discord após cada backup.
-
+- Imagem: `itzg/mc-backup:latest`.
+  
 ## Pré-requisitos
 
 - Docker e Docker Compose instalados.
