@@ -84,8 +84,6 @@ services:
         networks:
             minecraft-network:
                 ipv4_address: 172.18.0.6
-        env_file:
-            - 'docker.env'
         environment:
             TYPE: 'MODRINTH'
             MODRINTH_MODPACK: sop
