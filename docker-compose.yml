@@ -1,0 +1,148 @@
+networks:
+    minecraft-network:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.18.0.0/16
+
+services:
+
+    playit:
+        image: ghcr.io/playit-cloud/playit-agent:0.15
+        network_mode: host
+        environment:
+            SECRET_KEY: ${SECRET_KEY}
+        restart: always
+
+    lazymc:
+        image: ghcr.io/joesturge/lazymc-docker-proxy:latest    
+        networks:
+            minecraft-network:
+                ipv4_address: 172.18.0.2
+        restart: always
+        volumes:        
+            - data-raspberry:/server/raspberry:ro
+            - data-prominence:/server/prominence:ro
+            - data-vanilla:/server/vanilla:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+        ports:
+            - "25565:25565"
+            - "25566:25566" 
+            - "25567:25567" 
+    raspberry:
+        image: 'itzg/minecraft-server:java21'
+        networks:
+            minecraft-network:
+                ipv4_address: 172.18.0.4
+        environment:
+            TYPE: 'AUTO_CURSEFORGE'
+            CF_PAGE_URL: 'https://www.curseforge.com/minecraft/modpacks/raspberry-flavoured/files/6385078'
+            MAX_PLAYERS: 10
+            VERSION: 1.19.2
+            ICON: 'https://files.catbox.moe/zo5z0t.png'
+            CF_API_KEY: ${CF_API_KEY}
+            MEMORY: ${MEMORY}
+            USE_AIKAR_FLAGS: ${USE_AIKAR_FLAGS}
+            PVP: ${PVP}
+            ONLINE_MODE: ${ONLINE_MODE}
+            EULA: 'TRUE'
+            DIFFICULTY: ${DIFFICULTY}
+            OPS: ${OPS}
+            ALLOW_FLIGHT: TRUE
+            MOTD: | 
+                \u00A7c +\u00A7r\u00A7m-----------\u00A7c+\u00A7r \u00A7e\u00A7lErick's Network\u00A7r \u00A7c+\u00A7r\u00A7m-----------\u00A7c+\u00A7r
+                \u00A7c>\u00A74>\u00A7r \u00A7c\u00A7lMODPACK\u00A77: Raspberry Flavoured 3.0 Pre-Release 4
+            CF_EXCLUDE_MODS: |
+                polytone
+                slotify
+            CURSEFORGE_FILES: |
+                mc2discord
+                chunky-pregenerator-forge
+                simple-voice-chat
+            ENABLE_RCON: "true"
+            RCON_PASSWORD: "raspberryRCON"
+            RCON_PORT: "25575"
+        volumes:
+            - data-raspberry:/data
+            - ./downloads:/downloads
+        labels:
+            - lazymc.enabled=true        
+            - lazymc.group=raspberry        
+            - lazymc.server.address=raspberry:25565
+            - lazymc.port=25565 
+            - lazymc.public.version=1.19.2       
+            - lazymc.server.forge=true
+            - lazymc.server.directory=/server/raspberry
+            - lazymc.time.minimum_online_time=600
+        ports:
+            - "24454:24454/udp"
+        restart: 'no'
+        stdin_open: true
+        tty: true
+
+    vanilla:
+        image: 'itzg/minecraft-server:java21'
+        networks:
+            minecraft-network:
+                ipv4_address: 172.18.0.6
+        env_file:
+            - 'docker.env'
+        environment:
+            TYPE: 'MODRINTH'
+            MODRINTH_MODPACK: sop
+            MODRINTH_PROJECTS: | 
+                mc2discord
+            VERSION: '1.21.4'
+            MEMORY: ${MEMORY}
+            USE_AIKAR_FLAGS: ${USE_AIKAR_FLAGS}
+            PVP: ${PVP}
+            ONLINE_MODE: ${ONLINE_MODE}
+            EULA: 'TRUE'
+            DIFFICULTY: ${DIFFICULTY}
+            OPS: ${OPS}
+            ICON: 'https://files.catbox.moe/q9hf4z.jpg'
+            MOTD: | 
+                \u00A7c +\u00A7r\u00A7m-----------\u00A7c+\u00A7r \u00A7e\u00A7lErick's Network\u00A7r \u00A7c+\u00A7r\u00A7m-----------\u00A7c+\u00A7r
+                \u00A7c>\u00A74>\u00A7r \u00A7c\u00A7lMODPACK\u00A77: Vanilla
+        volumes:
+            - data-vanilla:/data
+        labels:        
+            - lazymc.enabled=true        
+            - lazymc.group=vanilla        
+            - lazymc.server.address=vanilla:25565
+            - lazymc.public.version=1.21.4
+            - lazymc.port=25567
+            - lazymc.server.directory=/server/vanilla
+        restart: 'no'
+        stdin_open: true
+        tty: true
+
+    backups:
+        image: itzg/mc-backup:latest
+        depends_on:
+            raspberry:
+                condition: service_started
+        networks:
+            - minecraft-network
+        environment:
+            RCON_HOST: "raspberry"
+            RCON_PORT: "25575"
+            RCON_PASSWORD: "raspberryRCON"
+            BACKUP_INTERVAL: "2h"
+            INITIAL_DELAY: "10m"
+            BACKUP_METHOD: "tar"
+            PAUSE_IF_NO_PLAYERS: "false"
+            PRUNE_BACKUPS_DAYS: "7"
+            RCON_RETRIES: "-1"          # tenta até o servidor estar ligado
+            RCON_RETRY_INTERVAL: "1m"
+            DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}  # coloque a sua
+            POST_BACKUP_SCRIPT_FILE: "/scripts/post-backup-discord.sh"
+        volumes:
+            - data-raspberry:/data:ro
+            - D:\Backups\Minecraft-Backup:/backups
+            - ./scripts/post-backup-discord.sh:/scripts/post-backup-discord.sh:ro
+
+volumes:
+    data-raspberry:
+    data-prominence:
+    data-vanilla:
