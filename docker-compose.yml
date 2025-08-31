@@ -74,6 +74,11 @@ services:
         restart: 'no'
         stdin_open: true
         tty: true
+        healthcheck:
+            test: mc-health
+            start_period: 1m
+            interval: 5s
+            retries: 20
 
     # backups:
     #     image: itzg/mc-backup:latest
