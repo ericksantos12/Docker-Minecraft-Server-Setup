@@ -21,57 +21,53 @@ services:
                 ipv4_address: 172.18.0.2
         restart: always
         volumes:        
-            - data-raspberry:/server/raspberry:ro
-            - data-vanilla:/server/vanilla:ro
+            - /srv/docker/minecraft/allthemods:/server/allthemods:ro
             - /var/run/docker.sock:/var/run/docker.sock:ro
         ports:
             - "25565:25565"
-            - "25566:25566" 
-            - "25567:25567" 
-    raspberry:
+    allthemods:
         image: 'itzg/minecraft-server:java21'
         networks:
             minecraft-network:
                 ipv4_address: 172.18.0.4
         environment:
             TYPE: 'AUTO_CURSEFORGE'
-            CF_PAGE_URL: 'https://www.curseforge.com/minecraft/modpacks/raspberry-flavoured/files/6385078'
+            CF_PAGE_URL: 'https://www.curseforge.com/minecraft/modpacks/all-the-mods-10/files/6921534'
             MAX_PLAYERS: 10
-            VERSION: 1.19.2
-            ICON: 'https://files.catbox.moe/zo5z0t.png'
+            VERSION: 1.21.1
+            ICON: 'https://media.forgecdn.net/avatars/thumbnails/1182/438/64/64/638755918649288941.png'
             CF_API_KEY: ${CF_API_KEY}
-            MEMORY: ${MEMORY}
-            USE_AIKAR_FLAGS: ${USE_AIKAR_FLAGS}
-            PVP: ${PVP}
-            ONLINE_MODE: ${ONLINE_MODE}
+            MEMORY: 6G
+            USE_AIKAR_FLAGS: 'true'
+            PVP: 'false'
+            ONLINE_MODE: 'FALSE'
             EULA: 'TRUE'
-            DIFFICULTY: ${DIFFICULTY}
+            DIFFICULTY: 'normal'
             OPS: ${OPS}
             ALLOW_FLIGHT: TRUE
             MOTD: | 
                 \u00A7c +\u00A7r\u00A7m-----------\u00A7c+\u00A7r \u00A7e\u00A7lErick's Network\u00A7r \u00A7c+\u00A7r\u00A7m-----------\u00A7c+\u00A7r
-                \u00A7c>\u00A74>\u00A7r \u00A7c\u00A7lMODPACK\u00A77: Raspberry Flavoured 3.0 Pre-Release 4
-            CF_EXCLUDE_MODS: |
-                polytone
-                slotify
+                \u00A7c>\u00A74>\u00A7r \u00A7c\u00A7lMODPACK\u00A77: All the Mods 10 - ATM10  
             CURSEFORGE_FILES: |
-                mc2discord
-                chunky-pregenerator-forge
+                skinrestorer
                 simple-voice-chat
+            CF_EXCLUDE_MODS: |
+                smithing-template-viewer
+            # CF_FORCE_SYNCHRONIZE: 'true'
             ENABLE_RCON: "true"
-            RCON_PASSWORD: "raspberryRCON"
+            RCON_PASSWORD: "allthemodsRCON"
             RCON_PORT: "25575"
+            CF_OVERRIDES_EXCLUSIONS: |
+                shaderpacks/**
         volumes:
-            - data-raspberry:/data
-            - ./downloads:/downloads
+            - /srv/docker/minecraft/allthemods:/data
         labels:
             - lazymc.enabled=true        
-            - lazymc.group=raspberry        
-            - lazymc.server.address=raspberry:25565
+            - lazymc.group=allthemods        
+            - lazymc.server.address=allthemods:25565
             - lazymc.port=25565 
-            - lazymc.public.version=1.19.2       
-            - lazymc.server.forge=true
-            - lazymc.server.directory=/server/raspberry
+            - lazymc.public.version=1.21.1       
+            - lazymc.server.directory=/server/allthemods
             - lazymc.time.minimum_online_time=600
         ports:
             - "24454:24454/udp"
@@ -79,66 +75,27 @@ services:
         stdin_open: true
         tty: true
 
-    vanilla:
-        image: 'itzg/minecraft-server:java21'
-        networks:
-            minecraft-network:
-                ipv4_address: 172.18.0.6
-        environment:
-            TYPE: 'MODRINTH'
-            MODRINTH_MODPACK: sop
-            MODRINTH_PROJECTS: | 
-                mc2discord
-            VERSION: '1.21.4'
-            MEMORY: ${MEMORY}
-            USE_AIKAR_FLAGS: ${USE_AIKAR_FLAGS}
-            PVP: ${PVP}
-            ONLINE_MODE: ${ONLINE_MODE}
-            EULA: 'TRUE'
-            DIFFICULTY: ${DIFFICULTY}
-            OPS: ${OPS}
-            ICON: 'https://files.catbox.moe/q9hf4z.jpg'
-            MOTD: | 
-                \u00A7c +\u00A7r\u00A7m-----------\u00A7c+\u00A7r \u00A7e\u00A7lErick's Network\u00A7r \u00A7c+\u00A7r\u00A7m-----------\u00A7c+\u00A7r
-                \u00A7c>\u00A74>\u00A7r \u00A7c\u00A7lMODPACK\u00A77: Vanilla
-        volumes:
-            - data-vanilla:/data
-        labels:        
-            - lazymc.enabled=true        
-            - lazymc.group=vanilla        
-            - lazymc.server.address=vanilla:25565
-            - lazymc.public.version=1.21.4
-            - lazymc.port=25567
-            - lazymc.server.directory=/server/vanilla
-        restart: 'no'
-        stdin_open: true
-        tty: true
-
-    backups:
-        image: itzg/mc-backup:latest
-        depends_on:
-            raspberry:
-                condition: service_started
-        networks:
-            - minecraft-network
-        environment:
-            RCON_HOST: "raspberry"
-            RCON_PORT: "25575"
-            RCON_PASSWORD: "raspberryRCON"
-            BACKUP_INTERVAL: "2h"
-            INITIAL_DELAY: "10m"
-            BACKUP_METHOD: "tar"
-            PAUSE_IF_NO_PLAYERS: "false"
-            PRUNE_BACKUPS_DAYS: "7"
-            RCON_RETRIES: "-1"          # tenta até o servidor estar ligado
-            RCON_RETRY_INTERVAL: "1m"
-            DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}  # coloque a sua
-            POST_BACKUP_SCRIPT_FILE: "/scripts/post-backup-discord.sh"
-        volumes:
-            - data-raspberry:/data:ro
-            - D:\Backups\Minecraft-Backup:/backups
-            - ./scripts/post-backup-discord.sh:/scripts/post-backup-discord.sh:ro
-
-volumes:
-    data-raspberry:
-    data-vanilla:
+    # backups:
+    #     image: itzg/mc-backup:latest
+    #     depends_on:
+    #         allthemods:
+    #             condition: service_started
+    #     networks:
+    #         - minecraft-network
+    #     environment:
+    #         RCON_HOST: "allthemods"
+    #         RCON_PORT: "25575"
+    #         RCON_PASSWORD: "allthemodsRCON"
+    #         BACKUP_INTERVAL: "2h"
+    #         INITIAL_DELAY: "10m"
+    #         BACKUP_METHOD: "tar"
+    #         PAUSE_IF_NO_PLAYERS: "false"
+    #         PRUNE_BACKUPS_DAYS: "7"
+    #         RCON_RETRIES: "-1"          # tenta até o servidor estar ligado
+    #         RCON_RETRY_INTERVAL: "1m"
+    #         DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}  # coloque a sua
+    #         POST_BACKUP_SCRIPT_FILE: "/scripts/post-backup-discord.sh"
+    #     volumes:
+    #         - /srv/docker/minecraft/allthemods:/data:ro
+    #         - D:\Backups\Minecraft-Backup:/backups
+    #         - ./scripts/post-backup-discord.sh:/scripts/post-backup-discord.sh:ro
