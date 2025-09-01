@@ -70,7 +70,7 @@ services:
             - lazymc.port=25565 
             - lazymc.public.version=1.21.1       
             - lazymc.server.directory=/server/allthemods
-            - lazymc.time.minimum_online_time=600
+            - lazymc.time.minimum_online_time=300
         ports:
             - "24454:24454/udp"
         restart: 'no'
