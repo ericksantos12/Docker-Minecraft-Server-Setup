@@ -35,13 +35,14 @@ services:
             TYPE: 'NEOFORGE'
             GENERIC_PACK: '/data/allthemods.zip'
  #           CF_PAGE_URL: 'https://www.curseforge.com/minecraft/modpacks/all-the-mods-10/files/6921534'
-            MAX_PLAYERS: 10
+            MAX_PLAYERS: 5
             VERSION: 1.21.1
             ICON: 'https://media.forgecdn.net/avatars/thumbnails/1182/438/64/64/638755918649288941.png'
             CF_API_KEY: ${CF_API_KEY}
-            MEMORY: 6G
+            INIT_MEMORY: 4G
+            MAX_MEMORY: 6G
             USE_AIKAR_FLAGS: 'true'
-            PVP: 'false'
+            PVP: 'true'
             ONLINE_MODE: 'FALSE'
             EULA: 'TRUE'
             DIFFICULTY: 'normal'
@@ -52,7 +53,6 @@ services:
                 \u00A7c>\u00A74>\u00A7r \u00A7c\u00A7lMODPACK\u00A77: All the Mods 10 - ATM10  
             CURSEFORGE_FILES: |
                 skinrestorer
-                simple-voice-chat
             CF_EXCLUDE_MODS: |
                 smithing-template-viewer
             # CF_FORCE_SYNCHRONIZE: 'true'
