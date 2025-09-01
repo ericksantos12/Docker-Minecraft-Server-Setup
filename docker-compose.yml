@@ -82,27 +82,35 @@ services:
             interval: 5s
             retries: 20
       
-    # backup:
-    #     image: itzg/mc-backup:latest
-    #     depends_on:
-    #         allthemods:
-    #             condition: service_started
-    #     networks:
-    #         - minecraft-network
-    #     environment:
-    #         RCON_HOST: "allthemods"
-    #         RCON_PORT: "25575"
-    #         RCON_PASSWORD: "allthemodsRCON"
-    #         BACKUP_INTERVAL: "2h"
-    #         INITIAL_DELAY: "10m"
-    #         BACKUP_METHOD: "rclone"
-    #         PAUSE_IF_NO_PLAYERS: "false"
-    #         PRUNE_BACKUPS_DAYS: "3"
-    #         RCON_RETRIES: "-1"          # tenta até o servidor estar ligado
-    #         RCON_RETRY_INTERVAL: "1m"
-    #         DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}  # coloque a sua
-    #         POST_BACKUP_SCRIPT_FILE: "/scripts/post-backup-discord.sh"
-    #     volumes:
-    #         - /srv/docker/minecraft/allthemods:/data:ro
-    #         - /srv/backups/allthemods:/backups
-    #         - /srv/docker/minecraft/scripts/post-backup-discord.sh:/scripts/post-backup-discord.sh:ro
+    backup:
+        image: itzg/mc-backup:latest
+        depends_on:
+            allthemods:
+                condition: service_healthy
+        networks:
+            - minecraft-network
+        environment:
+            RCON_HOST: "allthemods"
+            RCON_PORT: "25575"
+            RCON_PASSWORD: "allthemodsRCON"
+            RCON_RETRIES: "-1"          # tenta até o servidor estar ligado
+            RCON_RETRY_INTERVAL: "1m"
+
+            BACKUP_INTERVAL: "2h"
+            INITIAL_DELAY: "10m"
+            PAUSE_IF_NO_PLAYERS: "false"
+
+            BACKUP_METHOD: "rclone"
+            DEST_DIR: "/backups"
+            RCLONE_REMOTE: "koofr"
+            RCLONE_DEST_DIR: "Backups/minecraft/allthemods"  # caminho no Koofr
+            RCLONE_COMPRESS_METHOD: "gzip"                   # (opcional) gzip | zstd
+            PRUNE_BACKUPS_DAYS: "3"
+
+            DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}  # coloque a sua
+            POST_BACKUP_SCRIPT_FILE: "/scripts/post-backup-discord.sh"
+        volumes:
+            - /srv/docker/minecraft/allthemods:/data:ro
+            - /srv/backups/allthemods:/backups
+            - ./scripts/post-backup-discord.sh:/scripts/post-backup-discord.sh:ro
+            - /srv/docker/rclone/rclone.conf:/config/rclone/rclone.conf:ro
