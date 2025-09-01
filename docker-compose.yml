@@ -25,14 +25,16 @@ services:
             - /var/run/docker.sock:/var/run/docker.sock:ro
         ports:
             - "25565:25565"
+            
     allthemods:
         image: 'itzg/minecraft-server:java21'
         networks:
             minecraft-network:
                 ipv4_address: 172.18.0.4
         environment:
-            TYPE: 'AUTO_CURSEFORGE'
-            CF_PAGE_URL: 'https://www.curseforge.com/minecraft/modpacks/all-the-mods-10/files/6921534'
+            TYPE: 'NEOFORGE'
+            GENERIC_PACK: '/data/allthemods.zip'
+ #           CF_PAGE_URL: 'https://www.curseforge.com/minecraft/modpacks/all-the-mods-10/files/6921534'
             MAX_PLAYERS: 10
             VERSION: 1.21.1
             ICON: 'https://media.forgecdn.net/avatars/thumbnails/1182/438/64/64/638755918649288941.png'
@@ -79,28 +81,28 @@ services:
             start_period: 1m
             interval: 5s
             retries: 20
-
-    # backups:
-    #     image: itzg/mc-backup:latest
-    #     depends_on:
-    #         allthemods:
-    #             condition: service_started
-    #     networks:
-    #         - minecraft-network
-    #     environment:
-    #         RCON_HOST: "allthemods"
-    #         RCON_PORT: "25575"
-    #         RCON_PASSWORD: "allthemodsRCON"
-    #         BACKUP_INTERVAL: "2h"
-    #         INITIAL_DELAY: "10m"
-    #         BACKUP_METHOD: "tar"
-    #         PAUSE_IF_NO_PLAYERS: "false"
-    #         PRUNE_BACKUPS_DAYS: "7"
-    #         RCON_RETRIES: "-1"          # tenta até o servidor estar ligado
-    #         RCON_RETRY_INTERVAL: "1m"
-    #         DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}  # coloque a sua
-    #         POST_BACKUP_SCRIPT_FILE: "/scripts/post-backup-discord.sh"
-    #     volumes:
-    #         - /srv/docker/minecraft/allthemods:/data:ro
-    #         - D:\Backups\Minecraft-Backup:/backups
-    #         - ./scripts/post-backup-discord.sh:/scripts/post-backup-discord.sh:ro
+      
+    backup:
+        image: itzg/mc-backup:latest
+        depends_on:
+            allthemods:
+                condition: service_started
+        networks:
+            - minecraft-network
+        environment:
+            RCON_HOST: "allthemods"
+            RCON_PORT: "25575"
+            RCON_PASSWORD: "allthemodsRCON"
+            BACKUP_INTERVAL: "2h"
+            INITIAL_DELAY: "10m"
+            BACKUP_METHOD: "tar"
+            PAUSE_IF_NO_PLAYERS: "false"
+            PRUNE_BACKUPS_DAYS: "3"
+            RCON_RETRIES: "-1"          # tenta até o servidor estar ligado
+            RCON_RETRY_INTERVAL: "1m"
+            DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}  # coloque a sua
+            POST_BACKUP_SCRIPT_FILE: "/scripts/post-backup-discord.sh"
+        volumes:
+            - /srv/docker/minecraft/allthemods:/data:ro
+            - /srv/backups/allthemods:/backups
+            - /srv/docker/minecraft/scripts/post-backup-discord.sh:/scripts/post-backup-discord.sh:ro
